@@ -42,15 +42,25 @@ def show():
             )
 
             if model_selection_method == "MANUAL PATH ENTRY":
+
                 model_path = st.text_input(
                     "**ENTER THE PATH OF THE DESIRED MODEL**",
                     value = r"C:\company\wips\ft_llama_3.2_3b_1\merge_model",
-                    help = "학습시킨 모델이 저장되어 있는 전체 경로를 입력하세요."
+                    help = "학습시킨 모델이 저장되어 있는 전체 경로를 입력하세요.",
+                    key = "manual_model_path"
                 )
 
                 if not model_path.strip():
                     st.info("🔴 MODEL PATH HAS NOT BEEN ENTERED YET.")
                     model_path = None
+
+                else:
+                    if os.path.exists(model_path):
+                        db = TrainingDatabase()
+                        db_record = db.get_record_by_path(model_path)
+                        if db_record:
+                            st.session_state["inference_model_type_from_db"] = db_record.get('hyperparameters', {}).get('model_type', 'GENERATIVE')
+                            st.session_state["inference_model_name_from_db"] = db_record.get('model_name', 'google/gemma-2-2b')
 
             else:
 
@@ -89,7 +99,8 @@ def show():
                             selected_model_name = st.selectbox(
                                 "**SELECT ONE OF THE FOUND MODELS**",
                                 options = model_options,
-                                index = 0
+                                index = 0,
+                                key = "auto_model_select"
                             )
 
                             if selected_model_name == "-- SELECT --":
@@ -97,6 +108,11 @@ def show():
                                 model_path = None
                             else:
                                 model_path = next(path for name, path in valid_models if name == selected_model_name)
+                                db = TrainingDatabase()
+                                db_record = db.get_record_by_path(model_path)
+                                if db_record:
+                                    st.session_state["inference_model_type_from_db"] = db_record.get('hyperparameters', {}).get('model_type', 'GENERATIVE')
+                                    st.session_state["inference_model_name_from_db"] = db_record.get('model_name', 'google/gemma-2-2b')
 
                         else:
                             st.info("🔴 NO MODEL COULD BE FOUND USING AUTOMATIC SEARCH.")
@@ -166,6 +182,9 @@ def show():
                     if db_record:
                         default_model_name = db_record.get('model_name', default_model_name)
 
+                    if "inference_model_name_from_db" in st.session_state:
+                        default_model_name = st.session_state["inference_model_name_from_db"]
+
                     with col1:
                         st.text_input(
                             "**HUGGING FACE TOKEN**", 
@@ -202,7 +221,10 @@ def show():
 
                         if model_name and model_name.strip():
 
-                            if "inference_model_type" not in st.session_state:
+                            if "inference_model_type_from_db" in st.session_state and "manual_model_type_override_inference" not in st.session_state:
+                                st.session_state["inference_model_type"] = st.session_state["inference_model_type_from_db"]
+
+                            elif "inference_model_type" not in st.session_state:
                                 detected_type = detect_model_type(model_name)
                                 st.session_state["inference_model_type"] = detected_type
                                 st.session_state["prev_model_name_for_detection"] = model_name
