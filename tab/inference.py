@@ -43,11 +43,24 @@ def show():
 
             if model_selection_method == "MANUAL PATH ENTRY":
 
+                def on_manual_path_change():
+                    new_path = st.session_state.get('manual_model_path', '')
+                    if new_path and os.path.exists(new_path):
+                        db = TrainingDatabase()
+                        db_record = db.get_record_by_path(new_path)
+                        if db_record:
+                            st.session_state["inference_model_type_from_db"] = db_record.get('hyperparameters', {}).get('model_type', 'GENERATIVE')
+                            st.session_state["inference_model_name_from_db"] = db_record.get('model_name', 'google/gemma-2-2b')
+                            st.session_state["inference_model_type"] = db_record.get('hyperparameters', {}).get('model_type', 'GENERATIVE')
+                            if "manual_model_type_override_inference" in st.session_state:
+                                del st.session_state["manual_model_type_override_inference"]
+
                 model_path = st.text_input(
                     "**ENTER THE PATH OF THE DESIRED MODEL**",
                     value = r"C:\company\wips\ft_llama_3.2_3b_1\merge_model",
                     help = "학습시킨 모델이 저장되어 있는 전체 경로를 입력하세요.",
-                    key = "manual_model_path"
+                    key = "manual_model_path",
+                    on_change = on_manual_path_change
                 )
 
                 if not model_path.strip():
@@ -61,6 +74,8 @@ def show():
                         if db_record:
                             st.session_state["inference_model_type_from_db"] = db_record.get('hyperparameters', {}).get('model_type', 'GENERATIVE')
                             st.session_state["inference_model_name_from_db"] = db_record.get('model_name', 'google/gemma-2-2b')
+                            if "manual_model_type_override_inference" not in st.session_state:
+                                st.session_state["inference_model_type"] = db_record.get('hyperparameters', {}).get('model_type', 'GENERATIVE')
 
             else:
 
@@ -94,13 +109,31 @@ def show():
 
                         if valid_models:
 
+                            st.session_state['inference_valid_models'] = valid_models
+
+                            def on_auto_model_select():
+                                selected = st.session_state.get('auto_model_select', '-- SELECT --')
+                                if selected != '-- SELECT --':
+                                    valid_models_list = st.session_state.get('inference_valid_models', [])
+                                    model_path = next((path for name, path in valid_models_list if name == selected), None)
+                                    if model_path:
+                                        db = TrainingDatabase()
+                                        db_record = db.get_record_by_path(model_path)
+                                        if db_record:
+                                            st.session_state["inference_model_type_from_db"] = db_record.get('hyperparameters', {}).get('model_type', 'GENERATIVE')
+                                            st.session_state["inference_model_name_from_db"] = db_record.get('model_name', 'google/gemma-2-2b')
+                                            st.session_state["inference_model_type"] = db_record.get('hyperparameters', {}).get('model_type', 'GENERATIVE')
+                                            if "manual_model_type_override_inference" in st.session_state:
+                                                del st.session_state["manual_model_type_override_inference"]
+
                             model_options = ['-- SELECT --'] + [name for name, path in valid_models]
 
                             selected_model_name = st.selectbox(
                                 "**SELECT ONE OF THE FOUND MODELS**",
                                 options = model_options,
                                 index = 0,
-                                key = "auto_model_select"
+                                key = "auto_model_select",
+                                on_change = on_auto_model_select
                             )
 
                             if selected_model_name == "-- SELECT --":
@@ -113,6 +146,8 @@ def show():
                                 if db_record:
                                     st.session_state["inference_model_type_from_db"] = db_record.get('hyperparameters', {}).get('model_type', 'GENERATIVE')
                                     st.session_state["inference_model_name_from_db"] = db_record.get('model_name', 'google/gemma-2-2b')
+                                    if "manual_model_type_override_inference" not in st.session_state:
+                                        st.session_state["inference_model_type"] = db_record.get('hyperparameters', {}).get('model_type', 'GENERATIVE')
 
                         else:
                             st.info("🔴 NO MODEL COULD BE FOUND USING AUTOMATIC SEARCH.")
@@ -173,7 +208,7 @@ def show():
                     model_type_info = db_record.get('hyperparameters', {}).get('model_type', 'GENERATIVE')
                     st.info(f"🔵 {db_record.get('model_name')}&nbsp;&nbsp;|&nbsp;&nbsp;{model_type_info}&nbsp;&nbsp;|&nbsp;&nbsp;(MAX LENGTH) {db_record.get('max_length', 512)} / (STRIDE) {db_record.get('stride', 50)}")
 
-                with st.expander("**TRANSFORMERS**", expanded = False):#
+                with st.expander("**TRANSFORMERS**", expanded = False):
 
                     col1, col2 = st.columns(2)
 
@@ -198,13 +233,15 @@ def show():
                         def on_model_name_change():
 
                             new_model = st.session_state.get('ft_model_name_inference', '')
-                            old_model = st.session_state.get('prev_model_name_for_detection', '')
+                            old_model = st.session_state.get('prev_model_name_for_detection_inference', '')
                             
                             if new_model != old_model:
                                 detected = detect_model_type(new_model)
                                 st.session_state["inference_model_type"] = detected
-                                st.session_state["prev_model_name_for_detection"] = new_model
-                                st.session_state["manual_model_type_override"] = False
+                                st.session_state["prev_model_name_for_detection_inference"] = new_model
+                                # st.session_state["manual_model_type_override_inference"] = False
+                                if "manual_model_type_override_inference" in st.session_state:
+                                    del st.session_state["manual_model_type_override_inference"]
 
                         model_name = st.text_input(
                             "**MODEL NAME**", 
@@ -227,7 +264,7 @@ def show():
                             elif "inference_model_type" not in st.session_state:
                                 detected_type = detect_model_type(model_name)
                                 st.session_state["inference_model_type"] = detected_type
-                                st.session_state["prev_model_name_for_detection"] = model_name
+                                st.session_state["prev_model_name_for_detection_inference"] = model_name
 
                             with col_a:
                                 rep_clicked = st.button(
@@ -236,7 +273,7 @@ def show():
                                 )
                                 if rep_clicked:
                                     st.session_state["inference_model_type"] = "REPRESENTATION"
-                                    st.session_state["manual_model_type_override"] = True
+                                    st.session_state["manual_model_type_override_inference"] = True
                                     st.rerun()
 
                             with col_b:
@@ -246,7 +283,7 @@ def show():
                                 )
                                 if gen_clicked:
                                     st.session_state["inference_model_type"] = "GENERATIVE"
-                                    st.session_state["manual_model_type_override"] = True
+                                    st.session_state["manual_model_type_override_inference"] = True
                                     st.rerun()
 
                 with st.expander("**HYPERPARAMETER**", expanded = False):
