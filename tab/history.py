@@ -181,12 +181,12 @@ def show():
                             with st.expander("**HYPERPARAMETER**", expanded = False):
                                 hyperparams = detailed_record['hyperparameters']
                                 model_type = hyperparams.get('model_type', 'GENERATIVE')
-                                if model_type == 'GENERATIVE':  
-                                    col1, col2, col3 = st.columns(3)                    
+                                if model_type == 'GENERATIVE':
+                                    col1, col2, col3 = st.columns(3)          
                                     with col1:
                                         st.write(f"**[ EPOCHS ]**<br>{hyperparams.get('num_train_epochs', 'N/A')}", unsafe_allow_html = True)
                                         st.write(f"**[ LEARNING RATE ]**<br>{hyperparams.get('learning_rate', 'N/A')}", unsafe_allow_html = True)
-                                        st.write(f"**[ TRAIN BATCH SIZE ]**<br>{hyperparams.get('per_device_train_batch_size', 'N/A')}", unsafe_allow_html = True)
+                                        st.write(f"**[ BATCH SIZE ]**<br>{hyperparams.get('per_device_train_batch_size', 'N/A')}", unsafe_allow_html = True)
                                     
                                     with col2:
                                         st.write(f"**[ MAX LENGTH ]**<br>{hyperparams.get('max_length', 'N/A')}", unsafe_allow_html = True)
@@ -202,7 +202,7 @@ def show():
                                     with col1:
                                         st.write(f"**[ EPOCHS ]**<br>{hyperparams.get('num_train_epochs', 'N/A')}", unsafe_allow_html = True)
                                         st.write(f"**[ LEARNING RATE ]**<br>{hyperparams.get('learning_rate', 'N/A')}", unsafe_allow_html = True)
-                                        st.write(f"**[ TRAIN BATCH SIZE ]**<br>{hyperparams.get('per_device_train_batch_size', 'N/A')}", unsafe_allow_html = True)
+                                        st.write(f"**[ BATCH SIZE ]**<br>{hyperparams.get('per_device_train_batch_size', 'N/A')}", unsafe_allow_html = True)
                                     
                                     with col2:
                                         st.write(f"**[ MAX LENGTH ]**<br>{hyperparams.get('max_length', 'N/A')}", unsafe_allow_html = True)
