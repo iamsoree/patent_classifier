@@ -239,7 +239,6 @@ def show():
                                 detected = detect_model_type(new_model)
                                 st.session_state["inference_model_type"] = detected
                                 st.session_state["prev_model_name_for_detection_inference"] = new_model
-                                # st.session_state["manual_model_type_override_inference"] = False
                                 if "manual_model_type_override_inference" in st.session_state:
                                     del st.session_state["manual_model_type_override_inference"]
 
